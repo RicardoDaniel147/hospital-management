@@ -1,6 +1,8 @@
 package com.hospital.repository;
 
 import com.hospital.model.HistoriaClinica;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,6 +15,5 @@ public interface HistoriaClinicaRepository extends JpaRepository<HistoriaClinica
 
     List<HistoriaClinica> findByDoctorId(Long doctorId);
 
-    // BUG INTENCIONAL: metodo sin paginacion — si hay muchos registros puede causar OOM
-    List<HistoriaClinica> findAllByOrderByFechaCreacionDesc();
+    Page<HistoriaClinica> findAllByOrderByFechaCreacionDesc(Pageable pageable);
 }

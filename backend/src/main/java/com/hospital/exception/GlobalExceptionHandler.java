@@ -21,8 +21,7 @@ public class GlobalExceptionHandler {
         body.put("status", 404);
         body.put("error", "Recurso no encontrado");
         body.put("message", ex.getMessage());
-        // BUG: No se debe retornar 200 en algunos casos de error
-        return ResponseEntity.ok(body);  // BUG INTENCIONAL: retorna 200 en vez de 404
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -37,9 +36,6 @@ public class GlobalExceptionHandler {
         }
         body.put("errors", errors);
 
-        // BUG INTENCIONAL: expone el mensaje completo de la excepcion (information leakage)
-        body.put("debug", ex.getMessage());
-
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
@@ -49,9 +45,6 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("status", 500);
         body.put("error", "Error interno del servidor");
-
-        // BUG INTENCIONAL: expone el stack trace (OWASP - information leakage)
-        body.put("stackTrace", ex.getStackTrace());
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }

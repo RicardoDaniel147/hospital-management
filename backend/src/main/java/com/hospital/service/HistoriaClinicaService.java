@@ -8,6 +8,8 @@ import com.hospital.model.Paciente;
 import com.hospital.repository.DoctorRepository;
 import com.hospital.repository.HistoriaClinicaRepository;
 import com.hospital.repository.PacienteRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,16 +22,15 @@ public class HistoriaClinicaService {
     private final DoctorRepository doctorRepository;
 
     public HistoriaClinicaService(HistoriaClinicaRepository historiaRepository,
-                                  PacienteRepository pacienteRepository,
-                                  DoctorRepository doctorRepository) {
+            PacienteRepository pacienteRepository,
+            DoctorRepository doctorRepository) {
         this.historiaRepository = historiaRepository;
         this.pacienteRepository = pacienteRepository;
         this.doctorRepository = doctorRepository;
     }
 
-    public List<HistoriaClinica> listarTodas() {
-        // BUG: sin paginacion, potencial OOM con muchos registros
-        return historiaRepository.findAllByOrderByFechaCreacionDesc();
+    public Page<HistoriaClinica> listarTodas(Pageable pageable) {
+        return historiaRepository.findAllByOrderByFechaCreacionDesc(pageable);
     }
 
     public HistoriaClinica buscarPorId(Long id) {
@@ -54,7 +55,8 @@ public class HistoriaClinicaService {
         historia.setTratamiento(dto.getTratamiento());
         historia.setObservaciones(dto.getObservaciones());
 
-        // BUG INTENCIONAL: no sanitiza el contenido HTML/scripts del diagnostico (XSS)
+        historia.setDiagnostico(
+                historia.getDiagnostico() == null ? null : historia.getDiagnostico().replaceAll("<[^>]*>", ""));
         return historiaRepository.save(historia);
     }
 

@@ -4,6 +4,8 @@ import com.hospital.dto.PacienteDTO;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.model.Paciente;
 import com.hospital.repository.PacienteRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,8 +19,8 @@ public class PacienteService {
         this.pacienteRepository = pacienteRepository;
     }
 
-    public List<Paciente> listarTodos() {
-        return pacienteRepository.findAll();
+    public Page<Paciente> listarTodos(Pageable pageable) {
+        return pacienteRepository.findAll(pageable);
     }
 
     public Paciente buscarPorId(Long id) {
@@ -29,20 +31,33 @@ public class PacienteService {
     }
 
     public Paciente crear(PacienteDTO dto) {
+        if (dto.getEmail() != null && pacienteRepository.findByEmail(dto.getEmail()) != null) {
+            throw new IllegalArgumentException("El email ya está registrado");
+        }
         Paciente paciente = toEntity(dto);
-        // BUG INTENCIONAL: No valida si el email ya existe antes de guardar
         return pacienteRepository.save(paciente);
     }
 
     public Paciente actualizar(Long id, PacienteDTO dto) {
         Paciente paciente = buscarPorId(id);
-        // BUG INTENCIONAL: actualiza todos los campos sin validar si vienen nulos
-        paciente.setNombre(dto.getNombre());
-        paciente.setApellido(dto.getApellido());
-        paciente.setFechaNacimiento(dto.getFechaNacimiento());
-        paciente.setEmail(dto.getEmail());
-        paciente.setTelefono(dto.getTelefono());
-        paciente.setDireccion(dto.getDireccion());
+        if (dto.getNombre() != null) {
+            paciente.setNombre(dto.getNombre());
+        }
+        if (dto.getApellido() != null) {
+            paciente.setApellido(dto.getApellido());
+        }
+        if (dto.getFechaNacimiento() != null) {
+            paciente.setFechaNacimiento(dto.getFechaNacimiento());
+        }
+        if (dto.getEmail() != null) {
+            paciente.setEmail(dto.getEmail());
+        }
+        if (dto.getTelefono() != null) {
+            paciente.setTelefono(dto.getTelefono());
+        }
+        if (dto.getDireccion() != null) {
+            paciente.setDireccion(dto.getDireccion());
+        }
         if (dto.getActivo() != null) {
             paciente.setActivo(dto.getActivo());
         }
@@ -70,14 +85,17 @@ public class PacienteService {
 
     public double calcularEdadPromedio() {
         List<Paciente> pacientes = pacienteRepository.findAll();
-        // BUG INTENCIONAL: division por cero si no hay pacientes
+        if (pacientes.isEmpty()) {
+            return 0.0;
+        }
+
         long suma = 0;
         for (Paciente p : pacientes) {
             if (p.getFechaNacimiento() != null) {
                 suma += java.time.Period.between(p.getFechaNacimiento(), java.time.LocalDate.now()).getYears();
             }
         }
-        return (double) suma / pacientes.size(); // BUG: division by zero si lista vacia
+        return (double) suma / pacientes.size();
     }
 
     private Paciente toEntity(PacienteDTO dto) {

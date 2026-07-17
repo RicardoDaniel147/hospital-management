@@ -4,8 +4,8 @@ import com.hospital.dto.DoctorDTO;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.model.Doctor;
 import com.hospital.repository.DoctorRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,15 +15,12 @@ public class DoctorService {
 
     private final DoctorRepository doctorRepository;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
     public DoctorService(DoctorRepository doctorRepository) {
         this.doctorRepository = doctorRepository;
     }
 
-    public List<Doctor> listarTodos() {
-        return doctorRepository.findAll();
+    public Page<Doctor> listarTodos(Pageable pageable) {
+        return doctorRepository.findAll(pageable);
     }
 
     public Doctor buscarPorId(Long id) {
@@ -48,16 +45,13 @@ public class DoctorService {
     }
 
     public void eliminar(Long id) {
-        // BUG INTENCIONAL: no verifica si el doctor tiene citas activas antes de eliminar
+        // BUG INTENCIONAL: no verifica si el doctor tiene citas activas antes de
+        // eliminar
         doctorRepository.deleteById(id);
     }
 
-    // BUG INTENCIONAL: SQL Injection — construye query concatenando strings
-    // Esta es una vulnerabilidad real de inyeccion SQL
     public List<Doctor> buscarPorEspecialidadInsegura(String especialidad) {
-        String sql = "SELECT * FROM doctores WHERE especialidad ILIKE '%" + especialidad + "%'";
-        jakarta.persistence.Query query = entityManager.createNativeQuery(sql, Doctor.class);
-        return query.getResultList();
+        return doctorRepository.findByEspecialidadContainingIgnoreCase(especialidad);
     }
 
     // Version segura del mismo metodo (para que los estudiantes comparen)

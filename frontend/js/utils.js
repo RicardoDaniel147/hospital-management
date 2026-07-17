@@ -14,9 +14,11 @@
  * @returns {string} - Fecha formateada
  */
 function formatDate(dateStr) {
-    // BUG INTENCIONAL: Si dateStr es null/undefined, new Date() retorna Invalid Date
-    // y todo el formateo falla sin aviso claro
+    if (!dateStr) return '';
+
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return '';
+
     return date.toLocaleDateString('es-EC', {
         year: 'numeric',
         month: 'long',
@@ -30,14 +32,18 @@ function formatDate(dateStr) {
  * @returns {string} - Fecha y hora formateada
  */
 function formatDateTime(dateStr) {
-    // BUG INTENCIONAL: no valida si dateStr es null
+    if (!dateStr) return '';
+
     const date = new Date(dateStr);
+    if (Number.isNaN(date.getTime())) return '';
+
     return date.toLocaleString('es-EC', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
     });
 }
 
@@ -47,15 +53,15 @@ function formatDateTime(dateStr) {
  * @returns {string} - Texto escapado
  */
 function escapeHTML(str) {
-    if (!str) return '';
-    // BUG INTENCIONAL: Escape incompleto — no escapa comillas simples (')
-    // ni backticks (`), permitiendo ciertos ataques XSS
-    return str
+    if (str === null || str === undefined) return '';
+
+    return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    // Faltan: .replace(/'/g, '&#39;')  y  .replace(/`/g, '&#96;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/`/g, '&#96;');
 }
 
 /**
