@@ -1,8 +1,25 @@
 {
   "name": "hospital-management-frontend",
   "version": "1.0.0",
+  "description": "Frontend del Hospital Management System - pruebas y analisis estatico",
   "private": true,
   "scripts": {
-    "test": "node --test"
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint js/*.js",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.5.0",
+    "@playwright/test": "^1.45.0",
+    "eslint": "^9.5.0",
+    "globals": "^15.6.0",
+    "jest": "^29.7.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/js/__tests__/**/*.test.js"
+    ]
   }
 }
