@@ -4,8 +4,10 @@ import com.hospital.dto.CitaDTO;
 import com.hospital.exception.ResourceNotFoundException;
 import com.hospital.model.Cita;
 import com.hospital.model.Doctor;
+import com.hospital.model.Paciente;
 import com.hospital.repository.CitaRepository;
 import com.hospital.repository.DoctorRepository;
+import com.hospital.repository.PacienteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,16 +17,18 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,10 +41,9 @@ import static org.mockito.Mockito.when;
  *
  * Cobertura:
  *  - Casos felices (happy path): listar, buscar, crear, actualizar, eliminar, filtros
- *  - Casos límite (boundary): listas vacías, estado nulo, rango de fechas invertido
- *  - Manejo de errores: cita no encontrada, doctor no encontrado
- *  - Documentación de bugs detectados: no valida existencia del paciente,
- *    no valida doble booking, no valida inicio < fin
+ *  - Casos límite (boundary): listas vacías, estado nulo
+ *  - Manejo de errores: cita no encontrada, paciente/doctor no encontrados,
+ *    fecha inválida, doble booking, rango de fechas invertido
  */
 @ExtendWith(MockitoExtension.class)
 class CitaServiceTest {
@@ -51,29 +54,43 @@ class CitaServiceTest {
     @Mock
     private DoctorRepository doctorRepository;
 
+    @Mock
+    private PacienteRepository pacienteRepository;
+
     @InjectMocks
     private CitaService citaService;
 
+    private Paciente paciente;
     private Doctor doctor;
     private Cita cita;
     private CitaDTO citaDTO;
+    private LocalDateTime fechaFutura;
 
     @BeforeEach
     void setUp() {
+        paciente = new Paciente();
+        paciente.setId(1L);
+        paciente.setNombre("Juan");
+        paciente.setApellido("Perez");
+
         doctor = new Doctor();
         doctor.setId(1L);
         doctor.setNombre("Elena");
         doctor.setApellido("Rodriguez");
         doctor.setEspecialidad("Cardiologia");
 
-        cita = new Cita(1L, doctor, LocalDateTime.of(2026, 8, 20, 9, 0),
+        // Fecha relativa al día de ejecución para que la validación
+        // "la cita debe ser futura" no dependa de la fecha del build
+        fechaFutura = LocalDateTime.now().plusDays(30).withNano(0);
+
+        cita = new Cita(1L, doctor, fechaFutura,
                 "Control cardiaco de rutina", "PROGRAMADA");
         cita.setId(10L);
 
         citaDTO = new CitaDTO();
         citaDTO.setPacienteId(1L);
         citaDTO.setDoctorId(1L);
-        citaDTO.setFechaHora(LocalDateTime.of(2026, 8, 20, 9, 0));
+        citaDTO.setFechaHora(fechaFutura);
         citaDTO.setMotivo("Control cardiaco de rutina");
         citaDTO.setEstado("PROGRAMADA");
     }
@@ -85,15 +102,17 @@ class CitaServiceTest {
     class CasosFelices {
 
         @Test
-        @DisplayName("listarTodas retorna todas las citas del repositorio")
-        void listarTodas_conCitas_retornaLista() {
-            when(citaRepository.findAll()).thenReturn(List.of(cita));
+        @DisplayName("listarTodas retorna la página de citas del repositorio")
+        void listarTodas_conCitas_retornaPagina() {
+            when(citaRepository.findAll(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(cita)));
 
-            List<Cita> resultado = citaService.listarTodas();
+            Page<Cita> resultado = citaService.listarTodas(PageRequest.of(0, 10));
 
-            assertThat(resultado).hasSize(1);
-            assertThat(resultado.get(0).getMotivo()).isEqualTo("Control cardiaco de rutina");
-            verify(citaRepository).findAll();
+            assertThat(resultado.getContent()).hasSize(1);
+            assertThat(resultado.getContent().get(0).getMotivo())
+                    .isEqualTo("Control cardiaco de rutina");
+            verify(citaRepository).findAll(any(Pageable.class));
         }
 
         @Test
@@ -110,6 +129,7 @@ class CitaServiceTest {
         @Test
         @DisplayName("crear guarda la cita con los datos del DTO cuando el doctor existe")
         void crear_conDoctorExistente_guardaCita() {
+            when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
             when(doctorRepository.findById(1L)).thenReturn(Optional.of(doctor));
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -121,7 +141,7 @@ class CitaServiceTest {
 
             assertThat(guardada.getPacienteId()).isEqualTo(1L);
             assertThat(guardada.getDoctor()).isEqualTo(doctor);
-            assertThat(guardada.getFechaHora()).isEqualTo(LocalDateTime.of(2026, 8, 20, 9, 0));
+            assertThat(guardada.getFechaHora()).isEqualTo(fechaFutura);
             assertThat(guardada.getMotivo()).isEqualTo("Control cardiaco de rutina");
             assertThat(resultado.getEstado()).isEqualTo("PROGRAMADA");
         }
@@ -204,19 +224,20 @@ class CitaServiceTest {
     class CasosLimite {
 
         @Test
-        @DisplayName("listarTodas retorna lista vacía cuando no hay citas")
-        void listarTodas_sinCitas_retornaListaVacia() {
-            when(citaRepository.findAll()).thenReturn(Collections.emptyList());
+        @DisplayName("listarTodas retorna página vacía cuando no hay citas")
+        void listarTodas_sinCitas_retornaPaginaVacia() {
+            when(citaRepository.findAll(any(Pageable.class))).thenReturn(Page.empty());
 
-            List<Cita> resultado = citaService.listarTodas();
+            Page<Cita> resultado = citaService.listarTodas(PageRequest.of(0, 10));
 
-            assertThat(resultado).isEmpty();
+            assertThat(resultado.getContent()).isEmpty();
         }
 
         @Test
         @DisplayName("crear asigna estado PROGRAMADA por defecto cuando el DTO no trae estado")
         void crear_estadoNulo_asignaProgramadaPorDefecto() {
             citaDTO.setEstado(null);
+            when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
             when(doctorRepository.findById(1L)).thenReturn(Optional.of(doctor));
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -243,49 +264,50 @@ class CitaServiceTest {
         }
 
         @Test
-        @DisplayName("BUG DETECTADO: listarPorRangoFechas acepta inicio > fin sin validar")
-        void listarPorRangoFechas_inicioMayorQueFin_noValida() {
-            // El servicio deberia rechazar un rango invertido, pero lo pasa
-            // directamente al repositorio. Esta prueba documenta el defecto.
+        @DisplayName("BUG CORREGIDO: listarPorRangoFechas rechaza inicio > fin")
+        void listarPorRangoFechas_inicioMayorQueFin_lanzaExcepcion() {
+            // Antes el servicio pasaba el rango invertido directo al
+            // repositorio; ahora lo valida y lanza IllegalArgumentException.
             LocalDateTime inicio = LocalDateTime.of(2026, 12, 31, 0, 0);
             LocalDateTime fin = LocalDateTime.of(2026, 1, 1, 0, 0);
-            when(citaRepository.findByFechaHoraBetween(inicio, fin))
-                    .thenReturn(Collections.emptyList());
 
-            List<Cita> resultado = citaService.listarPorRangoFechas(inicio, fin);
+            assertThatThrownBy(() -> citaService.listarPorRangoFechas(inicio, fin))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("rango de fechas");
 
-            assertThat(resultado).isEmpty();
-            verify(citaRepository).findByFechaHoraBetween(inicio, fin);
+            verify(citaRepository, never()).findByFechaHoraBetween(any(), any());
         }
 
         @Test
-        @DisplayName("BUG DETECTADO: crear no valida que el paciente exista")
-        void crear_pacienteInexistente_noValidaExistencia() {
-            // pacienteId 999 no existe, pero el servicio nunca consulta el
-            // repositorio de pacientes (y la BD tampoco tiene FK). La cita se
-            // guarda igual: esta prueba documenta el defecto de integridad.
+        @DisplayName("BUG CORREGIDO: crear rechaza citas con paciente inexistente")
+        void crear_pacienteInexistente_lanzaExcepcion() {
+            // Antes el servicio nunca consultaba el repositorio de pacientes;
+            // ahora valida la existencia y rechaza la cita.
             citaDTO.setPacienteId(999L);
-            when(doctorRepository.findById(1L)).thenReturn(Optional.of(doctor));
-            when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(pacienteRepository.findById(999L)).thenReturn(Optional.empty());
 
-            Cita resultado = citaService.crear(citaDTO);
+            assertThatThrownBy(() -> citaService.crear(citaDTO))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessageContaining("Paciente no encontrado");
 
-            assertThat(resultado.getPacienteId()).isEqualTo(999L);
+            verify(citaRepository, never()).save(any(Cita.class));
         }
 
         @Test
-        @DisplayName("BUG DETECTADO: crear no verifica doble booking del doctor")
-        void crear_mismoDoctorMismaHora_noVerificaConflicto() {
-            // Dos citas con el mismo doctor a la misma hora deberian rechazarse.
-            // El servicio nunca consulta las citas existentes del doctor.
+        @DisplayName("BUG CORREGIDO: crear rechaza doble booking del doctor")
+        void crear_mismoDoctorMismaHora_rechazaConflicto() {
+            // Antes dos citas con el mismo doctor a la misma hora se guardaban;
+            // ahora el servicio consulta la agenda y rechaza el conflicto.
+            when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
             when(doctorRepository.findById(1L)).thenReturn(Optional.of(doctor));
-            when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(citaRepository.existsByDoctorIdAndFechaHora(1L, fechaFutura))
+                    .thenReturn(true);
 
-            citaService.crear(citaDTO);
-            citaService.crear(citaDTO); // misma fecha/hora y mismo doctor
+            assertThatThrownBy(() -> citaService.crear(citaDTO))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Ya existe una cita");
 
-            // Nunca se consulta la agenda del doctor para detectar el conflicto
-            verify(citaRepository, never()).findByDoctorId(anyLong());
+            verify(citaRepository, never()).save(any(Cita.class));
         }
     }
 
@@ -309,11 +331,30 @@ class CitaServiceTest {
         @DisplayName("crear lanza ResourceNotFoundException si el doctor no existe")
         void crear_doctorInexistente_lanzaExcepcion() {
             citaDTO.setDoctorId(77L);
+            when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
             when(doctorRepository.findById(77L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> citaService.crear(citaDTO))
                     .isInstanceOf(ResourceNotFoundException.class)
                     .hasMessageContaining("Doctor no encontrado");
+
+            verify(citaRepository, never()).save(any(Cita.class));
+        }
+
+        @Test
+        @DisplayName("crear lanza IllegalArgumentException si la fecha es pasada o nula")
+        void crear_fechaPasadaONula_lanzaExcepcion() {
+            when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+            when(doctorRepository.findById(1L)).thenReturn(Optional.of(doctor));
+
+            citaDTO.setFechaHora(LocalDateTime.now().minusDays(1));
+            assertThatThrownBy(() -> citaService.crear(citaDTO))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("fecha");
+
+            citaDTO.setFechaHora(null);
+            assertThatThrownBy(() -> citaService.crear(citaDTO))
+                    .isInstanceOf(IllegalArgumentException.class);
 
             verify(citaRepository, never()).save(any(Cita.class));
         }

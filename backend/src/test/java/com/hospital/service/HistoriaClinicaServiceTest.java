@@ -17,6 +17,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,8 +44,8 @@ import static org.mockito.Mockito.when;
  *  - Casos felices: listar, buscar, crear (con y sin doctor), filtros
  *  - Casos límite: listas vacías, doctorId nulo (doctor opcional)
  *  - Manejo de errores: historia/paciente/doctor no encontrados
- *  - Documentación de bugs detectados: el diagnóstico se persiste sin
- *    sanitizar (XSS almacenado) y el listado no tiene paginación
+ *  - Bugs corregidos: el diagnóstico ahora se sanitiza (sin etiquetas HTML)
+ *    y el listado está paginado
  */
 @ExtendWith(MockitoExtension.class)
 class HistoriaClinicaServiceTest {
@@ -96,17 +100,18 @@ class HistoriaClinicaServiceTest {
     class CasosFelices {
 
         @Test
-        @DisplayName("listarTodas retorna historias ordenadas por fecha de creación")
-        void listarTodas_conHistorias_retornaLista() {
-            when(historiaRepository.findAllByOrderByFechaCreacionDesc())
-                    .thenReturn(List.of(historia));
+        @DisplayName("listarTodas retorna la página de historias ordenadas por fecha de creación")
+        void listarTodas_conHistorias_retornaPagina() {
+            when(historiaRepository.findAllByOrderByFechaCreacionDesc(any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(historia)));
 
-            List<HistoriaClinica> resultado = historiaService.listarTodas();
+            Page<HistoriaClinica> resultado =
+                    historiaService.listarTodas(PageRequest.of(0, 10));
 
-            assertThat(resultado).hasSize(1);
-            assertThat(resultado.get(0).getDiagnostico())
+            assertThat(resultado.getContent()).hasSize(1);
+            assertThat(resultado.getContent().get(0).getDiagnostico())
                     .isEqualTo("Hipertension arterial controlada");
-            verify(historiaRepository).findAllByOrderByFechaCreacionDesc();
+            verify(historiaRepository).findAllByOrderByFechaCreacionDesc(any(Pageable.class));
         }
 
         @Test
@@ -188,14 +193,15 @@ class HistoriaClinicaServiceTest {
         }
 
         @Test
-        @DisplayName("listarTodas retorna lista vacía cuando no hay historias")
-        void listarTodas_sinHistorias_retornaListaVacia() {
-            when(historiaRepository.findAllByOrderByFechaCreacionDesc())
-                    .thenReturn(Collections.emptyList());
+        @DisplayName("listarTodas retorna página vacía cuando no hay historias")
+        void listarTodas_sinHistorias_retornaPaginaVacia() {
+            when(historiaRepository.findAllByOrderByFechaCreacionDesc(any(Pageable.class)))
+                    .thenReturn(Page.empty());
 
-            List<HistoriaClinica> resultado = historiaService.listarTodas();
+            Page<HistoriaClinica> resultado =
+                    historiaService.listarTodas(PageRequest.of(0, 10));
 
-            assertThat(resultado).isEmpty();
+            assertThat(resultado.getContent()).isEmpty();
         }
 
         @Test
@@ -210,12 +216,11 @@ class HistoriaClinicaServiceTest {
         }
 
         @Test
-        @DisplayName("BUG DETECTADO: crear persiste el diagnóstico sin sanitizar (XSS almacenado)")
-        void crear_diagnosticoConScript_noSanitiza() {
-            // El servicio guarda tal cual cualquier HTML/script en el diagnóstico.
-            // Combinado con el innerHTML del frontend produce XSS almacenado.
-            String payload = "<script>alert('xss')</script>";
-            dto.setDiagnostico(payload);
+        @DisplayName("BUG CORREGIDO: crear sanitiza el diagnóstico eliminando etiquetas HTML")
+        void crear_diagnosticoConScript_sanitizaHTML() {
+            // Antes el servicio guardaba tal cual cualquier HTML/script en el
+            // diagnóstico (XSS almacenado); ahora elimina las etiquetas.
+            dto.setDiagnostico("<script>alert('xss')</script>");
             when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
             when(doctorRepository.findById(2L)).thenReturn(Optional.of(doctor));
             when(historiaRepository.save(any(HistoriaClinica.class)))
@@ -223,7 +228,9 @@ class HistoriaClinicaServiceTest {
 
             HistoriaClinica resultado = historiaService.crear(dto);
 
-            assertThat(resultado.getDiagnostico()).isEqualTo(payload);
+            assertThat(resultado.getDiagnostico())
+                    .doesNotContain("<script>")
+                    .isEqualTo("alert('xss')");
         }
     }
 

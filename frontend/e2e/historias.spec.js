@@ -32,7 +32,9 @@ test.describe('Flujo de creacion y consulta de historias clinicas', () => {
         expect(response.status()).toBe(500);
         const body = await response.json();
         expect(body.error).toBe('Error interno del servidor');
-        expect(body.stackTrace).toBeDefined(); // fuga de informacion documentada
+        // CORREGIDO: la respuesta de error ya no expone el stack trace
+        // (la fuga de informacion documentada fue eliminada del handler)
+        expect(body.stackTrace).toBeUndefined();
     });
 
     test('BUG DETECTADO: la tabla de historias queda vacia sin informar al usuario', async ({ page }) => {

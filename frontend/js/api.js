@@ -7,6 +7,8 @@
  * 2. Propaga los errores HTTP (response.ok = false lanza una excepcion con detalle)
  * 3. Maneja respuestas sin cuerpo (204/200 vacio) devolviendo null
  * 4. Conserva el Content-Type por defecto al fusionar headers personalizados
+ * 5. Los listados principales del backend ahora son paginados (Spring Page):
+ *    unwrapPage extrae content para que los modulos sigan recibiendo arrays
  */
 
 const API_BASE = 'http://localhost:8080/api';
@@ -61,10 +63,22 @@ async function apiFetch(endpoint, options = {}) {
     }
 }
 
+/**
+ * Extrae el array de resultados de una respuesta paginada de Spring Data
+ * ({ content: [...], totalElements, ... }). Si la respuesta ya es un array
+ * (endpoints sin paginar) se devuelve tal cual.
+ * @param {object|Array|null} data - Respuesta parseada de la API
+ * @returns {Array}
+ */
+function unwrapPage(data) {
+    if (Array.isArray(data)) return data;
+    return (data && data.content) || [];
+}
+
 // ================== PACIENTES ==================
 
 const PacientesAPI = {
-    listar: () => apiFetch('/pacientes'),
+    listar: () => apiFetch('/pacientes').then(unwrapPage),
 
     buscar: (id) => apiFetch(`/pacientes/${id}`),
 
@@ -92,7 +106,7 @@ const PacientesAPI = {
 // ================== DOCTORES ==================
 
 const DoctoresAPI = {
-    listar: () => apiFetch('/doctores'),
+    listar: () => apiFetch('/doctores').then(unwrapPage),
 
     buscar: (id) => apiFetch(`/doctores/${id}`),
 
@@ -122,7 +136,7 @@ const DoctoresAPI = {
 // ================== CITAS ==================
 
 const CitasAPI = {
-    listar: () => apiFetch('/citas'),
+    listar: () => apiFetch('/citas').then(unwrapPage),
 
     buscar: (id) => apiFetch(`/citas/${id}`),
 
@@ -154,7 +168,7 @@ const CitasAPI = {
 // ================== HISTORIAS CLINICAS ==================
 
 const HistoriasAPI = {
-    listar: () => apiFetch('/historias-clinicas'),
+    listar: () => apiFetch('/historias-clinicas').then(unwrapPage),
 
     buscar: (id) => apiFetch(`/historias-clinicas/${id}`),
 
