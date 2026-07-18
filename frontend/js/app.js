@@ -94,12 +94,12 @@ const App = {
                 const promedio = await PacientesAPI.edadPromedio();
                 document.getElementById('stat-edad-promedio').textContent =
                     promedio ? promedio.toFixed(1) + ' años' : '—';
-            } catch (e) {
+            } catch {
                 document.getElementById('stat-edad-promedio').textContent = '—';
             }
         } catch (error) {
             // BUG: error generico, no informa que fallo
-            console.log('Error al cargar dashboard');
+            console.error('Error al cargar dashboard', error);
         }
     },
 };

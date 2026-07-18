@@ -93,26 +93,20 @@ test.describe('Flujo CRUD de pacientes', () => {
         expect(dialogMessage).toContain('0988888888');
     });
 
-    test('elimina el paciente (documenta bugs de confirmacion y de manejo del 200 vacio)', async ({ page }) => {
+    test('elimina el paciente tras confirmar y desaparece de la tabla (comportamiento corregido)', async ({ page }) => {
+        // CORREGIDO: la eliminacion pide confirmacion; se acepta el dialogo
+        page.on('dialog', (dialog) => dialog.accept());
+
         const fila = page.locator('#pacientes-table tbody tr', { hasText: NOMBRE });
         await expect(fila).toHaveCount(1);
 
-        // BUG conocido #1: elimina sin pedir confirmacion (no hay dialogo que aceptar)
         await fila.locator('button.btn-delete').click();
 
-        // BUG conocido #2: el DELETE retorna 200 con cuerpo vacio y apiFetch
-        // intenta parsearlo como JSON, por lo que la UI muestra un error
-        // aunque la eliminacion en el backend SI se ejecuto
+        // CORREGIDO: el DELETE (200 con cuerpo vacio) ya se maneja como exito
         await expect(page.locator('#alert-container'))
-            .toContainText('Error al eliminar paciente');
-        await page.screenshot({ path: 'e2e/evidencias/pacientes-06-alerta-eliminar.png' });
-
-        // Al recargar la seccion se comprueba que el paciente ya no existe
-        await page.reload();
-        await page.click('button.nav-btn[data-section="pacientes"]');
-        await expect(page.locator('#pacientes-table tbody tr').first()).toBeVisible();
+            .toContainText('Paciente eliminado exitosamente');
         await expect(page.locator('#pacientes-table tbody tr', { hasText: NOMBRE }))
             .toHaveCount(0);
-        await page.screenshot({ path: 'e2e/evidencias/pacientes-07-eliminado.png', fullPage: true });
+        await page.screenshot({ path: 'e2e/evidencias/pacientes-06-eliminado.png', fullPage: true });
     });
 });

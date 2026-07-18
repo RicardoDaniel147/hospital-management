@@ -2,40 +2,63 @@
  * api.js - Modulo de comunicacion con la API REST
  * Contiene funciones para interactuar con el backend del hospital
  *
- * BUGS INTENCIONALES IDENTIFICABLES MEDIANTE PRUEBAS:
- * 1. No hay manejo de timeout en fetch (puede colgarse indefinidamente)
- * 2. Algunas funciones no validan parametros de entrada
- * 3. Las respuestas de error no se propagan correctamente en algunos metodos
+ * CORRECCIONES: apiFetch ahora:
+ * 1. Configura un timeout con AbortController (la peticion ya no se cuelga)
+ * 2. Propaga los errores HTTP (response.ok = false lanza una excepcion con detalle)
+ * 3. Maneja respuestas sin cuerpo (204/200 vacio) devolviendo null
+ * 4. Conserva el Content-Type por defecto al fusionar headers personalizados
  */
 
 const API_BASE = 'http://localhost:8080/api';
+const API_TIMEOUT_MS = 10000;
 
 /**
  * Realiza una peticion HTTP generica a la API
  * @param {string} endpoint - Ruta relativa del endpoint
  * @param {object} options - Opciones de fetch (method, body, headers)
- * @returns {Promise<object>} - Respuesta parseada como JSON
+ * @returns {Promise<object|null>} - Respuesta parseada como JSON, o null si no hay cuerpo
+ * @throws {Error} - Si la respuesta HTTP no es exitosa (error.status y error.body disponibles)
  */
 async function apiFetch(endpoint, options = {}) {
     const url = `${API_BASE}${endpoint}`;
+    const { headers, ...rest } = options;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
     const config = {
+        ...rest,
         headers: {
             'Content-Type': 'application/json',
-            ...options.headers,
+            ...headers,
         },
-        ...options,
+        signal: rest.signal || controller.signal,
     };
 
-    // BUG INTENCIONAL: Sin timeout — una peticion puede quedarse colgada
-    const response = await fetch(url, config);
+    try {
+        const response = await fetch(url, config);
 
-    // BUG INTENCIONAL: No maneja response.ok = false consistentemente
-    // Para DELETE, intenta parsear JSON aunque el body este vacio
-    const data = await response.json();
+        if (!response.ok) {
+            let errorBody = null;
+            try {
+                errorBody = await response.json();
+            } catch {
+                /* respuesta de error sin cuerpo JSON */
+            }
+            const message = (errorBody && errorBody.message) || `Error HTTP ${response.status}`;
+            const error = new Error(message);
+            error.status = response.status;
+            error.body = errorBody;
+            throw error;
+        }
 
-    // BUG: si !response.ok, deberia lanzar error pero solo retorna data
-    return data;
+        // 204 No Content o cuerpo vacio (p. ej. DELETE): no hay JSON que parsear
+        if (response.status === 204) return null;
+        const text = await response.text();
+        return text ? JSON.parse(text) : null;
+    } finally {
+        clearTimeout(timeoutId);
+    }
 }
 
 // ================== PACIENTES ==================

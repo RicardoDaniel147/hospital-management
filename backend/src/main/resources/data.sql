@@ -15,7 +15,7 @@ INSERT INTO doctores (nombre, apellido, especialidad, email, telefono, consultor
 ('Elena', 'Rodriguez', 'Cardiologia', 'elena.rodriguez@hospital.com', '0943210987', 'CONS-101'),
 ('Miguel', 'Torres', 'Pediatria', 'miguel.torres@hospital.com', '0932109876', 'CONS-205'),
 ('Sofia', 'Castillo', 'Dermatologia', 'sofia.castillo@hospital.com', '0921098765', 'CONS-304'),
-('Diego', 'Morales', NULL, 'diego.morales@hospital.com', '0910987654', 'CONS-150');
+('Diego', 'Morales', 'Medicina General', 'diego.morales@hospital.com', '0910987654', 'CONS-150');
 
 -- Datos semilla para citas
 INSERT INTO citas (paciente_id, doctor_id, fecha_hora, motivo, estado) VALUES

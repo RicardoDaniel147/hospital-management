@@ -24,7 +24,7 @@ const PacientesModule = {
             this.renderTabla(pacientes);
         } catch (error) {
             // BUG INTENCIONAL: No muestra el error al usuario
-            console.log('Error al cargar pacientes'); // BUG: console.log en vez de console.error
+            console.error('Error al cargar pacientes', error);
         }
     },
 
@@ -33,8 +33,7 @@ const PacientesModule = {
             const promedio = await PacientesAPI.edadPromedio();
             document.getElementById('stat-edad-promedio').textContent =
                 promedio ? promedio.toFixed(1) + ' años' : 'N/D';
-        } catch (e) {
-            // BUG: traga la excepcion silenciosamente
+        } catch {
             document.getElementById('stat-edad-promedio').textContent = '—';
         }
     },
@@ -46,13 +45,12 @@ const PacientesModule = {
             return;
         }
 
-        // BUG INTENCIONAL: usa innerHTML con datos que podrian tener XSS
-        // (aunque el backend no sanitiza, el frontend tampoco)
+        // CORREGIDO: se escapan todos los datos del usuario para prevenir XSS
         tbody.innerHTML = pacientes.map(p => `
             <tr>
-                <td>${p.nombre} ${p.apellido}</td>
-                <td>${p.email || '—'}</td>
-                <td>${p.telefono || '—'}</td>
+                <td>${escapeHTML(p.nombre)} ${escapeHTML(p.apellido)}</td>
+                <td>${escapeHTML(p.email) || '—'}</td>
+                <td>${escapeHTML(p.telefono) || '—'}</td>
                 <td>${formatDate(p.fechaNacimiento)}</td>
                 <td><span class="badge ${p.activo ? 'badge-activo' : 'badge-inactivo'}">${p.activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="actions">
@@ -141,8 +139,8 @@ const PacientesModule = {
             await this.cargarPacientes();
             await this.cargarEstadisticas();
         } catch (error) {
-            // BUG INTENCIONAL: mensaje de error generico, no muestra detalles
-            showAlert('Error al guardar el paciente', 'error');
+            // CORREGIDO: se muestra el detalle del error al usuario
+            showAlert(`Error al guardar el paciente: ${error.message}`, 'error');
         }
     },
 
@@ -159,7 +157,7 @@ const PacientesModule = {
                 <strong>Estado:</strong> ${paciente.activo ? 'Activo' : 'Inactivo'}
             `;
             alert(info); // BUG: usa alert() que bloquea el UI thread
-        } catch (error) {
+        } catch {
             showAlert('Error al cargar paciente', 'error');
         }
     },
@@ -168,20 +166,20 @@ const PacientesModule = {
         try {
             const paciente = await PacientesAPI.buscar(id);
             this.mostrarFormulario(paciente);
-        } catch (error) {
+        } catch {
             showAlert('Error al cargar datos del paciente', 'error');
         }
     },
 
-    // BUG INTENCIONAL: Elimina sin pedir confirmacion
+    // CORREGIDO: pide confirmacion antes de eliminar y explica el error real
     async eliminarPaciente(id) {
+        if (!confirm('¿Está seguro de que desea eliminar este paciente?')) return;
         try {
             await PacientesAPI.eliminar(id);
             showAlert('Paciente eliminado exitosamente', 'success');
             await this.cargarPacientes();
         } catch (error) {
-            // BUG: Si falla por FK constraint (tiene citas), no se explica bien
-            showAlert('Error al eliminar paciente', 'error');
+            showAlert(`Error al eliminar paciente: ${error.message}`, 'error');
         }
     },
 };

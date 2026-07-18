@@ -28,20 +28,20 @@ const CitasModule = {
             this.citasCache = citas;
             this.renderTabla(citas);
         } catch (error) {
-            console.log('Error al cargar citas');
+            console.error('Error al cargar citas', error);
         }
     },
 
     async cargarDoctores() {
         try {
             this.doctoresCache = await DoctoresAPI.listar();
-        } catch (e) { /* silencioso */ }
+        } catch { /* silencioso */ }
     },
 
     async cargarPacientes() {
         try {
             this.pacientesCache = await PacientesAPI.listar();
-        } catch (e) { /* silencioso */ }
+        } catch { /* silencioso */ }
     },
 
     renderTabla(citas) {
@@ -57,13 +57,14 @@ const CitasModule = {
                 ? `${c.doctor.nombre} ${c.doctor.apellido}`
                 : 'No asignado';
 
+            // CORREGIDO: se escapan los datos del usuario para prevenir XSS
             return `
                 <tr>
-                    <td>Paciente #${c.pacienteId}</td>
-                    <td>${doctorNombre}</td>
+                    <td>Paciente #${escapeHTML(c.pacienteId)}</td>
+                    <td>${escapeHTML(doctorNombre)}</td>
                     <td>${formatDateTime(c.fechaHora)}</td>
-                    <td>${c.motivo || '—'}</td>
-                    <td><span class="badge badge-${(c.estado || '').toLowerCase()}">${c.estado}</span></td>
+                    <td>${escapeHTML(c.motivo) || '—'}</td>
+                    <td><span class="badge badge-${escapeHTML((c.estado || '').toLowerCase())}">${escapeHTML(c.estado)}</span></td>
                     <td class="actions">
                         <button class="btn-edit" onclick="CitasModule.editarCita(${c.id})">Editar</button>
                         <button class="btn-delete" onclick="CitasModule.eliminarCita(${c.id})">Eliminar</button>
@@ -87,7 +88,7 @@ const CitasModule = {
         try {
             const citas = await CitasAPI.porEstado(estado);
             this.renderTabla(citas);
-        } catch (e) {
+        } catch {
             showAlert('Error al filtrar citas', 'error');
         }
     },
@@ -162,8 +163,7 @@ const CitasModule = {
             this.cerrarFormulario();
             await this.cargarCitas();
         } catch (error) {
-            // BUG: mensaje generico
-            showAlert('Error al guardar la cita', 'error');
+            showAlert(`Error al guardar la cita: ${error.message}`, 'error');
         }
     },
 
@@ -171,18 +171,20 @@ const CitasModule = {
         try {
             const cita = await CitasAPI.buscar(id);
             this.mostrarFormulario(cita);
-        } catch (error) {
+        } catch {
             showAlert('Error al cargar datos de la cita', 'error');
         }
     },
 
     async eliminarCita(id) {
+        // CORREGIDO: pide confirmacion antes de eliminar
+        if (!confirm('¿Está seguro de que desea eliminar esta cita?')) return;
         try {
             await CitasAPI.eliminar(id);
             showAlert('Cita eliminada exitosamente', 'success');
             await this.cargarCitas();
         } catch (error) {
-            showAlert('Error al eliminar cita', 'error');
+            showAlert(`Error al eliminar cita: ${error.message}`, 'error');
         }
     },
 };

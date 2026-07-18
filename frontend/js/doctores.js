@@ -21,7 +21,7 @@ const DoctoresModule = {
             this.doctoresCache = doctores;
             this.renderTabla(doctores);
         } catch (error) {
-            console.log('Error al cargar doctores');
+            console.error('Error al cargar doctores', error);
         }
     },
 
@@ -32,12 +32,13 @@ const DoctoresModule = {
             return;
         }
 
+        // CORREGIDO: se escapan los datos del usuario para prevenir XSS
         tbody.innerHTML = doctores.map(d => `
             <tr>
-                <td>${d.nombre} ${d.apellido}</td>
-                <td>${d.especialidad || '<em>Sin especialidad</em>'}</td>
-                <td>${d.email || '—'}</td>
-                <td>${d.consultorio || '—'}</td>
+                <td>${escapeHTML(d.nombre)} ${escapeHTML(d.apellido)}</td>
+                <td>${d.especialidad ? escapeHTML(d.especialidad) : '<em>Sin especialidad</em>'}</td>
+                <td>${escapeHTML(d.email) || '—'}</td>
+                <td>${escapeHTML(d.consultorio) || '—'}</td>
                 <td class="actions">
                     <button class="btn-edit" onclick="DoctoresModule.editarDoctor(${d.id})">Editar</button>
                     <button class="btn-delete" onclick="DoctoresModule.eliminarDoctor(${d.id})">Eliminar</button>
@@ -119,7 +120,7 @@ const DoctoresModule = {
             this.cerrarFormulario();
             await this.cargarDoctores();
         } catch (error) {
-            showAlert('Error al guardar el doctor', 'error');
+            showAlert(`Error al guardar el doctor: ${error.message}`, 'error');
         }
     },
 
@@ -127,19 +128,20 @@ const DoctoresModule = {
         try {
             const doctor = await DoctoresAPI.buscar(id);
             this.mostrarFormulario(doctor);
-        } catch (error) {
+        } catch {
             showAlert('Error al cargar datos del doctor', 'error');
         }
     },
 
     async eliminarDoctor(id) {
-        // BUG: no pide confirmacion, elimina directo
+        // CORREGIDO: pide confirmacion antes de eliminar
+        if (!confirm('¿Está seguro de que desea eliminar este doctor?')) return;
         try {
             await DoctoresAPI.eliminar(id);
             showAlert('Doctor eliminado exitosamente', 'success');
             await this.cargarDoctores();
         } catch (error) {
-            showAlert('Error al eliminar doctor', 'error');
+            showAlert(`Error al eliminar doctor: ${error.message}`, 'error');
         }
     },
 };

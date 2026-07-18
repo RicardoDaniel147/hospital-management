@@ -25,9 +25,10 @@ test.describe('Flujo CRUD de doctores', () => {
         await expect(page.locator('#doctores-table tbody tr')).not.toHaveCount(0);
         await expect(page.locator('#doctores-table')).toContainText('Elena Rodriguez');
         await expect(page.locator('#doctores-table')).toContainText('Cardiologia');
-        // Caso conocido: el doctor Diego Morales no tiene especialidad (NULL en BD)
+        // CORREGIDO: tras el fix de BD (especialidad NOT NULL) Diego Morales
+        // ya tiene especialidad asignada ('Medicina General'), no queda NULL
         await expect(page.locator('#doctores-table tbody tr', { hasText: 'Diego Morales' }))
-            .toContainText('Sin especialidad');
+            .toContainText('Medicina General');
         await page.screenshot({ path: 'e2e/evidencias/doctores-01-listado.png', fullPage: true });
     });
 
@@ -70,22 +71,18 @@ test.describe('Flujo CRUD de doctores', () => {
         await page.screenshot({ path: 'e2e/evidencias/doctores-04-editado.png', fullPage: true });
     });
 
-    test('elimina el doctor creado (documenta bugs de confirmacion y del 200 vacio)', async ({ page }) => {
+    test('elimina el doctor creado tras confirmar y desaparece de la tabla (comportamiento corregido)', async ({ page }) => {
+        // CORREGIDO: la eliminacion pide confirmacion; se acepta el dialogo
+        page.on('dialog', (dialog) => dialog.accept());
+
         const fila = page.locator('#doctores-table tbody tr', { hasText: NOMBRE });
         await expect(fila).toHaveCount(1);
 
-        // BUG conocido #1: elimina sin confirmacion
         await fila.locator('button.btn-delete').click();
 
-        // BUG conocido #2: DELETE retorna 200 sin cuerpo, apiFetch falla al
-        // parsear JSON y la UI reporta error aunque el doctor si se elimino
+        // CORREGIDO: el DELETE (200 con cuerpo vacio) ya se maneja como exito
         await expect(page.locator('#alert-container'))
-            .toContainText('Error al eliminar doctor');
-
-        // Recargando la seccion se verifica que el doctor ya no existe
-        await page.reload();
-        await page.click('button.nav-btn[data-section="doctores"]');
-        await expect(page.locator('#doctores-table tbody tr').first()).toBeVisible();
+            .toContainText('Doctor eliminado exitosamente');
         await expect(page.locator('#doctores-table tbody tr', { hasText: NOMBRE }))
             .toHaveCount(0);
         await page.screenshot({ path: 'e2e/evidencias/doctores-05-eliminado.png', fullPage: true });

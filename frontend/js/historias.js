@@ -27,20 +27,20 @@ const HistoriasModule = {
             this.historiasCache = historias;
             this.renderTabla(historias);
         } catch (error) {
-            console.log('Error al cargar historias clinicas');
+            console.error('Error al cargar historias clinicas', error);
         }
     },
 
     async cargarPacientes() {
         try {
             this.pacientesCache = await PacientesAPI.listar();
-        } catch (e) { /* silencioso */ }
+        } catch { /* silencioso */ }
     },
 
     async cargarDoctores() {
         try {
             this.doctoresCache = await DoctoresAPI.listar();
-        } catch (e) { /* silencioso */ }
+        } catch { /* silencioso */ }
     },
 
     renderTabla(historias) {
@@ -59,13 +59,13 @@ const HistoriasModule = {
                 ? `${h.doctor.nombre} ${h.doctor.apellido}`
                 : 'N/A';
 
+            // CORREGIDO: se escapa el diagnostico y demas datos para prevenir XSS almacenado
             return `
                 <tr>
-                    <td>${pacienteNombre}</td>
-                    <td>${doctorNombre}</td>
+                    <td>${escapeHTML(pacienteNombre)}</td>
+                    <td>${escapeHTML(doctorNombre)}</td>
                     <td>${formatDateTime(h.fechaCreacion)}</td>
-                    <!-- BUG INTENCIONAL: diagnostico puede contener HTML/scripts (XSS) -->
-                    <td>${h.diagnostico}</td>
+                    <td>${escapeHTML(h.diagnostico)}</td>
                     <td class="actions">
                         <button class="btn-view" onclick="HistoriasModule.verHistoria(${h.id})">Ver</button>
                     </td>
@@ -128,22 +128,22 @@ const HistoriasModule = {
             this.cerrarFormulario();
             await this.cargarHistorias();
         } catch (error) {
-            showAlert('Error al guardar la historia clinica', 'error');
+            showAlert(`Error al guardar la historia clinica: ${error.message}`, 'error');
         }
     },
 
     async verHistoria(id) {
         try {
             const h = await HistoriasAPI.buscar(id);
-            // BUG INTENCIONAL: innerHTML con datos del backend sin sanitizar (XSS)
+            // CORREGIDO: se escapan todos los datos del backend antes de renderizar (XSS)
             const detalle = `
                 <div style="text-align:left">
-                    <p><strong>Paciente:</strong> ${h.paciente?.nombre || 'N/A'} ${h.paciente?.apellido || ''}</p>
-                    <p><strong>Doctor:</strong> ${h.doctor?.nombre || 'N/A'} ${h.doctor?.apellido || ''}</p>
+                    <p><strong>Paciente:</strong> ${escapeHTML(h.paciente?.nombre) || 'N/A'} ${escapeHTML(h.paciente?.apellido)}</p>
+                    <p><strong>Doctor:</strong> ${escapeHTML(h.doctor?.nombre) || 'N/A'} ${escapeHTML(h.doctor?.apellido)}</p>
                     <p><strong>Fecha:</strong> ${formatDateTime(h.fechaCreacion)}</p>
-                    <p><strong>Diagnostico:</strong> ${h.diagnostico}</p>
-                    <p><strong>Tratamiento:</strong> ${h.tratamiento || 'No especificado'}</p>
-                    <p><strong>Observaciones:</strong> ${h.observaciones || 'Ninguna'}</p>
+                    <p><strong>Diagnostico:</strong> ${escapeHTML(h.diagnostico)}</p>
+                    <p><strong>Tratamiento:</strong> ${escapeHTML(h.tratamiento) || 'No especificado'}</p>
+                    <p><strong>Observaciones:</strong> ${escapeHTML(h.observaciones) || 'Ninguna'}</p>
                 </div>
             `;
 
@@ -162,7 +162,7 @@ const HistoriasModule = {
             modal.appendChild(detailDiv);
 
             modal.classList.add('show');
-        } catch (error) {
+        } catch {
             showAlert('Error al cargar historia clinica', 'error');
         }
     },

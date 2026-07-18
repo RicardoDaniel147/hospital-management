@@ -38,6 +38,7 @@ function mockResponse(body, { ok = true, status = 200 } = {}) {
         ok,
         status,
         json: jest.fn().mockResolvedValue(body),
+        text: jest.fn().mockResolvedValue(body === undefined ? '' : JSON.stringify(body)),
     };
 }
 
@@ -76,17 +77,14 @@ describe('apiFetch', () => {
         expect(data).toEqual(payload);
     });
 
-    test('BUG NO DOCUMENTADO: headers personalizados sobrescriben los por defecto', async () => {
-        // apiFetch construye { headers: {...merge...}, ...options }: como
-        // ...options se expande DESPUES de headers, un options.headers
-        // reemplaza el merge completo y se pierde el Content-Type.
+    test('CORREGIDO: conserva el Content-Type por defecto al añadir headers personalizados', async () => {
         global.fetch.mockResolvedValue(mockResponse({}));
 
         await api.apiFetch('/pacientes', { headers: { Authorization: 'Bearer abc' } });
 
         const [, config] = global.fetch.mock.calls[0];
         expect(config.headers.Authorization).toBe('Bearer abc');
-        expect(config.headers['Content-Type']).toBeUndefined(); // defecto: deberia ser application/json
+        expect(config.headers['Content-Type']).toBe('application/json');
     });
 
     test('propaga el error cuando fetch rechaza (fallo de red)', async () => {
@@ -95,37 +93,45 @@ describe('apiFetch', () => {
         await expect(api.apiFetch('/pacientes')).rejects.toThrow('Failed to fetch');
     });
 
-    test('BUG DETECTADO: no lanza error cuando response.ok es false', async () => {
-        // Un 404/500 deberia rechazar la promesa; en su lugar apiFetch
-        // retorna el cuerpo del error como si fuera un resultado valido.
-        const errorBody = { error: 'Recurso no encontrado', status: 404 };
+    test('CORREGIDO: lanza un error con status y body cuando response.ok es false', async () => {
+        const errorBody = { message: 'Recurso no encontrado', status: 404 };
         global.fetch.mockResolvedValue(mockResponse(errorBody, { ok: false, status: 404 }));
 
-        const data = await api.apiFetch('/pacientes/999');
-
-        expect(data).toEqual(errorBody); // defecto: el llamador no puede distinguir el error
+        await expect(api.apiFetch('/pacientes/999')).rejects.toMatchObject({
+            message: 'Recurso no encontrado',
+            status: 404,
+            body: errorBody,
+        });
     });
 
-    test('BUG DETECTADO: falla al parsear respuestas con cuerpo vacio (DELETE 204)', async () => {
-        // Un DELETE tipico responde 204 sin cuerpo; response.json() rechaza
-        // y apiFetch propaga un SyntaxError en lugar de manejarlo.
+    test('CORREGIDO: maneja respuestas 204 sin cuerpo devolviendo null', async () => {
         global.fetch.mockResolvedValue({
             ok: true,
             status: 204,
             json: jest.fn().mockRejectedValue(new SyntaxError('Unexpected end of JSON input')),
+            text: jest.fn().mockResolvedValue(''),
         });
 
-        await expect(api.apiFetch('/pacientes/1', { method: 'DELETE' }))
-            .rejects.toThrow(SyntaxError);
+        const data = await api.apiFetch('/pacientes/1', { method: 'DELETE' });
+
+        expect(data).toBeNull();
     });
 
-    test('BUG DETECTADO: no configura timeout ni AbortSignal en fetch', async () => {
+    test('CORREGIDO: maneja respuestas 200 con cuerpo vacio (DELETE) devolviendo null', async () => {
+        global.fetch.mockResolvedValue(mockResponse(undefined, { ok: true, status: 200 }));
+
+        const data = await api.apiFetch('/pacientes/1', { method: 'DELETE' });
+
+        expect(data).toBeNull();
+    });
+
+    test('CORREGIDO: configura un AbortSignal (timeout) en la peticion fetch', async () => {
         global.fetch.mockResolvedValue(mockResponse({}));
 
         await api.apiFetch('/pacientes');
 
         const [, config] = global.fetch.mock.calls[0];
-        expect(config.signal).toBeUndefined(); // sin AbortController la peticion puede colgarse
+        expect(config.signal).toBeDefined();
     });
 });
 

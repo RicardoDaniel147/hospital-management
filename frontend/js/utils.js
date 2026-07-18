@@ -1,24 +1,24 @@
 /**
  * utils.js - Funciones de utilidad para el frontend
  *
- * BUGS INTENCIONALES:
- * 1. formatDate no maneja fechas nulas (retorna string vacia sin advertencia)
- * 2. escapeHTML es insuficiente (no escapa todos los caracteres peligrosos)
- * 3. showAlert usa innerHTML sin sanitizacion (XSS)
- * 4. validateEmail tiene una regex incorrecta que acepta emails invalidos
+ * CORRECCIONES: se subsanan los bugs de frontend
+ * documentados en el proyecto:
+ * 1. formatDate/formatDateTime ahora validan fechas nulas/invalidas
+ * 2. escapeHTML escapa tambien comillas simples y backticks (XSS)
+ * 3. showAlert usa textContent, ya no inyecta HTML sin sanitizar (XSS)
+ * 4. validateEmail usa una regex correcta (exige TLD de 2+ caracteres)
+ * 5. localToISO conserva la hora local sin desplazamiento de zona horaria
  */
 
 /**
  * Formatea una fecha ISO a formato legible en español
  * @param {string} dateStr - Fecha en formato ISO
- * @returns {string} - Fecha formateada
+ * @returns {string} - Fecha formateada o '—' si la entrada es invalida
  */
 function formatDate(dateStr) {
-    if (!dateStr) return '';
-
+    if (!dateStr) return '—';
     const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return '';
-
+    if (isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('es-EC', {
         year: 'numeric',
         month: 'long',
@@ -29,21 +29,18 @@ function formatDate(dateStr) {
 /**
  * Formatea fecha y hora
  * @param {string} dateStr - Fecha ISO
- * @returns {string} - Fecha y hora formateada
+ * @returns {string} - Fecha y hora formateada o '—' si la entrada es invalida
  */
 function formatDateTime(dateStr) {
-    if (!dateStr) return '';
-
+    if (!dateStr) return '—';
     const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return '';
-
+    if (isNaN(date.getTime())) return '—';
     return date.toLocaleString('es-EC', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
+        minute: '2-digit'
     });
 }
 
@@ -54,7 +51,6 @@ function formatDateTime(dateStr) {
  */
 function escapeHTML(str) {
     if (str === null || str === undefined) return '';
-
     return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -73,8 +69,12 @@ function showAlert(message, type = 'success') {
     const container = document.getElementById('alert-container');
     if (!container) return;
 
-    // BUG INTENCIONAL: usa innerHTML con el mensaje sin escaparlo (XSS)
-    container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    // CORREGIDO: se construye el nodo y se usa textContent para evitar XSS
+    container.innerHTML = '';
+    const div = document.createElement('div');
+    div.className = `alert alert-${type}`;
+    div.textContent = message;
+    container.appendChild(div);
 
     // Auto-ocultar despues de 4 segundos
     setTimeout(() => {
@@ -89,20 +89,17 @@ function showAlert(message, type = 'success') {
  */
 function validateEmail(email) {
     if (!email) return false;
-    // BUG INTENCIONAL: regex incorrecta — acepta emails sin TLD
-    // como "usuario@dominio" y rechaza emails validos con +
-    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{1,}$/;
+    // CORREGIDO: exige un TLD de al menos 2 caracteres y no admite dobles puntos
+    const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
     return regex.test(email);
 }
 
 /**
- * Valida un numero de telefono ecuatoriano
+ * Valida un numero de telefono ecuatoriano (10 digitos)
  * @param {string} telefono
  * @returns {boolean}
  */
 function validateTelefono(telefono) {
-    // BUG INTENCIONAL: solo acepta exactamente 10 digitos,
-    // pero no valida prefijos reales (09, 08, etc.)
     const regex = /^\d{10}$/;
     return regex.test(telefono);
 }
@@ -113,20 +110,22 @@ function validateTelefono(telefono) {
  * @returns {boolean}
  */
 function isFutureDate(dateStr) {
+    if (!dateStr) return false;
     const date = new Date(dateStr);
-    const now = new Date();
-    // BUG INTENCIONAL: Comparacion sin ajuste de zona horaria
-    // Una fecha "hoy" puede ser rechazada dependiendo de la zona
-    return date > now;
+    if (isNaN(date.getTime())) return false;
+    return date.getTime() > Date.now();
 }
 
 /**
- * Convierte una fecha de input datetime-local a ISO string
+ * Convierte una fecha de input datetime-local a ISO string conservando
+ * la hora local (sin desplazamiento por zona horaria).
  * @param {string} localDateTime - Valor de input datetime-local
- * @returns {string} - ISO string
+ * @returns {string} - ISO string local (sin sufijo Z)
  */
 function localToISO(localDateTime) {
-    // BUG INTENCIONAL: No especifica timezone, asume UTC
-    // En Ecuador (GMT-5) hay una diferencia de 5 horas
-    return new Date(localDateTime).toISOString();
+    if (!localDateTime) return '';
+    // CORREGIDO: se envia la hora tal cual la ingreso el usuario. Los inputs
+    // datetime-local ya entregan 'YYYY-MM-DDTHH:mm'; se asegura el formato de
+    // segundos sin convertir a UTC (que restaba/sumaba la diferencia horaria).
+    return localDateTime.length === 16 ? `${localDateTime}:00` : localDateTime;
 }
