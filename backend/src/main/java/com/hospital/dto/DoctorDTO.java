@@ -22,7 +22,9 @@ public class DoctorDTO {
     private String telefono;
     private String consultorio;
 
-    public DoctorDTO() {}
+    public DoctorDTO() {
+        // Constructor vacio requerido por Jackson para deserializar JSON
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

@@ -111,7 +111,7 @@ const DoctoresModule = {
 
         try {
             if (id) {
-                await DoctoresAPI.actualizar(parseInt(id), doctorData);
+                await DoctoresAPI.actualizar(Number.parseInt(id), doctorData);
                 showAlert('Doctor actualizado exitosamente', 'success');
             } else {
                 await DoctoresAPI.crear(doctorData);

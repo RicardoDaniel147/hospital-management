@@ -7,6 +7,8 @@ import java.time.LocalDateTime;
 @Table(name = "historias_clinicas")
 public class HistoriaClinica {
 
+    private static final ZoneId ZONA_HORARIA = ZoneId.of("America/Guayaquil");
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,7 +22,7 @@ public class HistoriaClinica {
     private Doctor doctor;
 
     @Column(name = "fecha_creacion")
-    private LocalDateTime fechaCreacion = LocalDateTime.now();
+    private LocalDateTime fechaCreacion = LocalDateTime.now(ZONA_HORARIA);
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String diagnostico;
@@ -40,7 +42,7 @@ public class HistoriaClinica {
         this.diagnostico = diagnostico;
         this.tratamiento = tratamiento;
         this.observaciones = observaciones;
-        this.fechaCreacion = LocalDateTime.now();
+        this.fechaCreacion = LocalDateTime.now(ZONA_HORARIA);
     }
 
     // Getters y Setters

@@ -53,7 +53,7 @@ body {
 }
 
 .header nav button {
-    background: rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.15);
     color: white;
     border: none;
     padding: 0.5rem 1.2rem;
@@ -65,7 +65,7 @@ body {
 
 .header nav button:hover,
 .header nav button.active {
-    background: rgba(255,255,255,0.3);
+    background: rgba(0,0,0,0.25);
 }
 
 /* ========== Main Content ========== */
@@ -305,4 +305,4 @@ tr:hover td {
 .badge-completada { background: #d1fae5; color: #065f46; }
 .badge-cancelada  { background: #fee2e2; color: #991b1b; }
 .badge-activo     { background: #d1fae5; color: #065f46; }
-.badge-inactivo   { background: #f3f4f6; color: #6b7280; }
+.badge-inactivo   { background: #f3f4f6; color: var(--gray-700); }

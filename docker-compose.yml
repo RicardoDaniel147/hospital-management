@@ -6,9 +6,9 @@ services:
     container_name: hospital-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: hospital
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: hospital123
+      POSTGRES_DB: ${DB_NAME:-hospital}
+      POSTGRES_USER: ${DB_USERNAME:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +16,7 @@ services:
       - ./backend/src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - ./backend/src/main/resources/data.sql:/docker-entrypoint-initdb.d/02-data.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d hospital"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-admin} -d ${DB_NAME:-hospital}"]
       interval: 10s
       timeout: 5s
       retries: 5

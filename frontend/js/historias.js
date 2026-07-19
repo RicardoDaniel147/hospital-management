@@ -109,9 +109,9 @@ const HistoriasModule = {
         e.preventDefault();
 
         const historiaData = {
-            pacienteId: parseInt(document.getElementById('historia-paciente').value),
+            pacienteId: Number.parseInt(document.getElementById('historia-paciente').value),
             doctorId: document.getElementById('historia-doctor').value
-                ? parseInt(document.getElementById('historia-doctor').value)
+                ? Number.parseInt(document.getElementById('historia-doctor').value)
                 : null,
             diagnostico: document.getElementById('historia-diagnostico').value,
             tratamiento: document.getElementById('historia-tratamiento').value,

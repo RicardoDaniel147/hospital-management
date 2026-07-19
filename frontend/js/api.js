@@ -47,7 +47,7 @@ async function apiFetch(endpoint, options = {}) {
             } catch {
                 /* respuesta de error sin cuerpo JSON */
             }
-            const message = (errorBody && errorBody.message) || `Error HTTP ${response.status}`;
+            const message = errorBody?.message || `Error HTTP ${response.status}`;
             const error = new Error(message);
             error.status = response.status;
             error.body = errorBody;
@@ -72,7 +72,7 @@ async function apiFetch(endpoint, options = {}) {
  */
 function unwrapPage(data) {
     if (Array.isArray(data)) return data;
-    return (data && data.content) || [];
+    return data?.content || [];
 }
 
 // ================== PACIENTES ==================

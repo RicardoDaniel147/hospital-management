@@ -20,6 +20,8 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class CitaService {
 
+    private static final ZoneId ZONA_HORARIA = ZoneId.of("America/Guayaquil");
+
     private final CitaRepository citaRepository;
     private final DoctorRepository doctorRepository;
     private final PacienteRepository pacienteRepository;
@@ -48,7 +50,7 @@ public class CitaService {
         Doctor doctor = doctorRepository.findById(dto.getDoctorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor no encontrado"));
 
-        if (dto.getFechaHora() == null || dto.getFechaHora().isBefore(LocalDateTime.now())) {
+        if (dto.getFechaHora() == null || dto.getFechaHora().isBefore(LocalDateTime.now(ZONA_HORARIA))) {
             throw new IllegalArgumentException("La fecha y hora de la cita debe ser válida");
         }
 

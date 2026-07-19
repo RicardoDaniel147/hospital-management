@@ -85,7 +85,7 @@ const App = {
             // sin considerar la zona horaria correctamente
             const hoy = new Date().toISOString().split('T')[0]; // BUG: timezone-naive
             const citasHoy = citas.filter(c => {
-                return c.fechaHora && c.fechaHora.startsWith(hoy);
+                return c.fechaHora?.startsWith(hoy);
             });
             document.getElementById('stat-citas-hoy').textContent = citasHoy.length || '0';
 

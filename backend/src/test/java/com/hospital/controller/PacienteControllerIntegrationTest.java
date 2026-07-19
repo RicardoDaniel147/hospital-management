@@ -9,9 +9,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.time.LocalDate;
 import java.util.List;
+import java.time.LocalDate;
+import java.time.Month;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -44,7 +44,7 @@ class PacienteControllerIntegrationTest {
         PacienteDTO dto = new PacienteDTO();
         dto.setNombre("Laura");
         dto.setApellido("Torres");
-        dto.setFechaNacimiento(LocalDate.of(1995, 1, 5));
+        dto.setFechaNacimiento(LocalDate.of(1995, Month.JANUARY, 5));
         dto.setEmail("laura@mail.com");
         dto.setTelefono("0987654321");
         dto.setDireccion("Cuenca");

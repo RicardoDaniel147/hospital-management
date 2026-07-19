@@ -30,7 +30,9 @@ public class PacienteDTO {
     private String direccion;
     private Boolean activo = true;
 
-    public PacienteDTO() {}
+    public PacienteDTO() {
+        // Constructor vacio requerido por Jackson para deserializar JSON
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

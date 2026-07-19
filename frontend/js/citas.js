@@ -141,8 +141,8 @@ const CitasModule = {
         const fechaISO = localToISO(fechaLocal);
 
         const citaData = {
-            pacienteId: parseInt(document.getElementById('cita-paciente').value),
-            doctorId: parseInt(document.getElementById('cita-doctor').value),
+            pacienteId: Number.parseInt(document.getElementById('cita-paciente').value),
+            doctorId: Number.parseInt(document.getElementById('cita-doctor').value),
             fechaHora: fechaISO,
             motivo: document.getElementById('cita-motivo').value,
             estado: document.getElementById('cita-estado').value || 'PROGRAMADA',
@@ -154,7 +154,7 @@ const CitasModule = {
 
         try {
             if (id) {
-                await CitasAPI.actualizar(parseInt(id), citaData);
+                await CitasAPI.actualizar(Number.parseInt(id), citaData);
                 showAlert('Cita actualizada exitosamente', 'success');
             } else {
                 await CitasAPI.crear(citaData);

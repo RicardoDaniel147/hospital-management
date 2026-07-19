@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,7 +37,7 @@ class PacienteServiceTest {
         paciente.setId(1L);
         paciente.setNombre("Ana");
         paciente.setApellido("Pérez");
-        paciente.setFechaNacimiento(LocalDate.of(1990, 5, 10));
+        paciente.setFechaNacimiento(LocalDate.of(1990, Month.MAY, 10));
         paciente.setEmail("ana@mail.com");
         paciente.setTelefono("0999999999");
         paciente.setDireccion("Quito");
@@ -83,7 +84,7 @@ class PacienteServiceTest {
         PacienteDTO dto = new PacienteDTO();
         dto.setNombre("Luis");
         dto.setApellido("Mora");
-        dto.setFechaNacimiento(LocalDate.of(1985, 3, 15));
+        dto.setFechaNacimiento(LocalDate.of(1985, Month.MARCH, 15));
         dto.setEmail("luis@mail.com");
         dto.setTelefono("0988888888");
         dto.setDireccion("Guayaquil");

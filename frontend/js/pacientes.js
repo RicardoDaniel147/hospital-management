@@ -129,7 +129,7 @@ const PacientesModule = {
 
         try {
             if (id) {
-                await PacientesAPI.actualizar(parseInt(id), pacienteData);
+                await PacientesAPI.actualizar(Number.parseInt(id), pacienteData);
                 showAlert('Paciente actualizado exitosamente', 'success');
             } else {
                 await PacientesAPI.crear(pacienteData);

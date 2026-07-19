@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 import java.util.Optional;
 
@@ -153,13 +154,13 @@ class CitaServiceTest {
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
             CitaDTO cambios = new CitaDTO();
-            cambios.setFechaHora(LocalDateTime.of(2026, 9, 1, 15, 30));
+            cambios.setFechaHora(LocalDateTime.of(2026, Month.SEPTEMBER, 1, 15, 30));
             cambios.setMotivo("Reagendada por el paciente");
             cambios.setEstado("COMPLETADA");
 
             Cita resultado = citaService.actualizar(10L, cambios);
 
-            assertThat(resultado.getFechaHora()).isEqualTo(LocalDateTime.of(2026, 9, 1, 15, 30));
+            assertThat(resultado.getFechaHora()).isEqualTo(LocalDateTime.of(2026, Month.SEPTEMBER, 1, 15, 30));
             assertThat(resultado.getMotivo()).isEqualTo("Reagendada por el paciente");
             assertThat(resultado.getEstado()).isEqualTo("COMPLETADA");
         }
@@ -207,8 +208,8 @@ class CitaServiceTest {
         @Test
         @DisplayName("listarPorRangoFechas retorna citas dentro del rango")
         void listarPorRangoFechas_rangoValido_retornaCitas() {
-            LocalDateTime inicio = LocalDateTime.of(2026, 8, 1, 0, 0);
-            LocalDateTime fin = LocalDateTime.of(2026, 8, 31, 23, 59);
+            LocalDateTime inicio = LocalDateTime.of(2026, Month.AUGUST, 1, 0, 0);
+            LocalDateTime fin = LocalDateTime.of(2026, Month.SEPTEMBER, 31, 23, 59);
             when(citaRepository.findByFechaHoraBetween(inicio, fin)).thenReturn(List.of(cita));
 
             List<Cita> resultado = citaService.listarPorRangoFechas(inicio, fin);
@@ -254,7 +255,7 @@ class CitaServiceTest {
             when(citaRepository.save(any(Cita.class))).thenAnswer(inv -> inv.getArgument(0));
 
             CitaDTO cambios = new CitaDTO();
-            cambios.setFechaHora(LocalDateTime.of(2026, 9, 1, 15, 30));
+            cambios.setFechaHora(LocalDateTime.of(2026, Month.SEPTEMBER, 1, 15, 30));
             cambios.setMotivo("Sin cambio de estado");
             cambios.setEstado(null);
 
@@ -268,8 +269,8 @@ class CitaServiceTest {
         void listarPorRangoFechas_inicioMayorQueFin_lanzaExcepcion() {
             // Antes el servicio pasaba el rango invertido directo al
             // repositorio; ahora lo valida y lanza IllegalArgumentException.
-            LocalDateTime inicio = LocalDateTime.of(2026, 12, 31, 0, 0);
-            LocalDateTime fin = LocalDateTime.of(2026, 1, 1, 0, 0);
+            LocalDateTime inicio = LocalDateTime.of(2026, Month.DECEMBER, 31, 0, 0);
+            LocalDateTime fin = LocalDateTime.of(2026, Month.JANUARY, 1, 0, 0);
 
             assertThatThrownBy(() -> citaService.listarPorRangoFechas(inicio, fin))
                     .isInstanceOf(IllegalArgumentException.class)

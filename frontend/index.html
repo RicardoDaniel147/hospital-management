@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hospital Management System</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
+
 <body>
 
     <!-- ========== HEADER ========== -->
@@ -53,8 +55,9 @@
             <div class="toolbar">
                 <h2>Pacientes</h2>
                 <div style="display:flex;gap:0.5rem;">
-                    <input type="text" id="search-pacientes"
-                           placeholder="Buscar por nombre..." style="padding:0.5rem;border:1.5px solid #d1d5db;border-radius:6px;width:250px;">
+                    <input type="text" id="search-pacientes" aria-label="Buscar pacientes por nombre"
+                        placeholder="Buscar por nombre..."
+                        style="padding:0.5rem;border:1.5px solid #d1d5db;border-radius:6px;width:250px;">
                     <button class="btn btn-primary" id="btn-nuevo-paciente">+ Nuevo Paciente</button>
                 </div>
             </div>
@@ -78,8 +81,9 @@
             <div class="toolbar">
                 <h2>Doctores</h2>
                 <div style="display:flex;gap:0.5rem;">
-                    <input type="text" id="search-doctores"
-                           placeholder="Buscar por especialidad..." style="padding:0.5rem;border:1.5px solid #d1d5db;border-radius:6px;width:250px;">
+                    <input type="text" id="search-doctores" aria-label="Buscar doctores por especialidad"
+                        placeholder="Buscar por especialidad..."
+                        style="padding:0.5rem;border:1.5px solid #d1d5db;border-radius:6px;width:250px;">
                     <button class="btn btn-primary" id="btn-nuevo-doctor">+ Nuevo Doctor</button>
                 </div>
             </div>
@@ -102,8 +106,8 @@
             <div class="toolbar">
                 <h2>Citas Médicas</h2>
                 <div style="display:flex;gap:0.5rem;">
-                    <select id="filter-estado-citas"
-                            style="padding:0.5rem;border:1.5px solid #d1d5db;border-radius:6px;">
+                    <select id="filter-estado-citas" aria-label="Filtrar citas por estado"
+                        style="padding:0.5rem;border:1.5px solid #d1d5db;border-radius:6px;">
                         <option value="">Todos los estados</option>
                         <option value="PROGRAMADA">Programadas</option>
                         <option value="COMPLETADA">Completadas</option>
@@ -168,8 +172,7 @@
                 </div>
                 <div class="form-group">
                     <label for="paciente-telefono">Teléfono</label>
-                    <input type="text" id="paciente-telefono" maxlength="20"
-                           placeholder="0991234567">
+                    <input type="text" id="paciente-telefono" maxlength="20" placeholder="0991234567">
                 </div>
                 <div class="form-group">
                     <label for="paciente-direccion">Dirección</label>
@@ -181,7 +184,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline"
-                            onclick="PacientesModule.cerrarFormulario()">Cancelar</button>
+                        onclick="PacientesModule.cerrarFormulario()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
@@ -205,7 +208,7 @@
                 <div class="form-group">
                     <label for="doctor-especialidad">Especialidad</label>
                     <input type="text" id="doctor-especialidad" maxlength="100"
-                           placeholder="Ej: Cardiología, Pediatría...">
+                        placeholder="Ej: Cardiología, Pediatría...">
                 </div>
                 <div class="form-group">
                     <label for="doctor-email">Email</label>
@@ -217,12 +220,11 @@
                 </div>
                 <div class="form-group">
                     <label for="doctor-consultorio">Consultorio</label>
-                    <input type="text" id="doctor-consultorio" maxlength="50"
-                           placeholder="Ej: CONS-101">
+                    <input type="text" id="doctor-consultorio" maxlength="50" placeholder="Ej: CONS-101">
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline"
-                            onclick="DoctoresModule.cerrarFormulario()">Cancelar</button>
+                        onclick="DoctoresModule.cerrarFormulario()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
@@ -265,7 +267,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline"
-                            onclick="CitasModule.cerrarFormulario()">Cancelar</button>
+                        onclick="CitasModule.cerrarFormulario()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
@@ -304,7 +306,7 @@
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn btn-outline"
-                            onclick="HistoriasModule.cerrarFormulario()">Cancelar</button>
+                        onclick="HistoriasModule.cerrarFormulario()">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Guardar</button>
                 </div>
             </form>
@@ -325,4 +327,5 @@
     <script src="js/historias.js"></script>
     <script src="js/app.js"></script>
 </body>
+
 </html>

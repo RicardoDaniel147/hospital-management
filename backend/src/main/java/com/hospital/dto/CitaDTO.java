@@ -22,7 +22,9 @@ public class CitaDTO {
     private String motivo;
     private String estado = "PROGRAMADA";
 
-    public CitaDTO() {}
+    public CitaDTO() {
+        // Constructor vacio requerido por Jackson para deserializar JSON
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

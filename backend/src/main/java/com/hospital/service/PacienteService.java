@@ -13,6 +13,8 @@ import java.util.List;
 @Service
 public class PacienteService {
 
+    private static final ZoneId ZONA_HORARIA = ZoneId.of("America/Guayaquil");
+
     private final PacienteRepository pacienteRepository;
 
     public PacienteService(PacienteRepository pacienteRepository) {
@@ -92,7 +94,7 @@ public class PacienteService {
         long suma = 0;
         for (Paciente p : pacientes) {
             if (p.getFechaNacimiento() != null) {
-                suma += java.time.Period.between(p.getFechaNacimiento(), java.time.LocalDate.now()).getYears();
+                suma += java.time.Period.between(p.getFechaNacimiento(), java.time.LocalDate.now(ZONA_HORARIA)).getYears();
             }
         }
         return (double) suma / pacientes.size();
@@ -106,7 +108,7 @@ public class PacienteService {
         p.setEmail(dto.getEmail());
         p.setTelefono(dto.getTelefono());
         p.setDireccion(dto.getDireccion());
-        p.setActivo(dto.getActivo() != null ? dto.getActivo() : true);
+        p.setActivo(dto.getActivo() == null || dto.getActivo());
         return p;
     }
 }

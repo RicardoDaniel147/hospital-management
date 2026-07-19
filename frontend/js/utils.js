@@ -18,7 +18,7 @@
 function formatDate(dateStr) {
     if (!dateStr) return '—';
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '—';
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleDateString('es-EC', {
         year: 'numeric',
         month: 'long',
@@ -34,7 +34,7 @@ function formatDate(dateStr) {
 function formatDateTime(dateStr) {
     if (!dateStr) return '—';
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '—';
+    if (Number.isNaN(date.getTime())) return '—';
     return date.toLocaleString('es-EC', {
         year: 'numeric',
         month: 'long',
@@ -52,12 +52,12 @@ function formatDateTime(dateStr) {
 function escapeHTML(str) {
     if (str === null || str === undefined) return '';
     return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;')
-        .replace(/`/g, '&#96;');
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;')
+        .replaceAll('`', '&#96;');
 }
 
 /**
@@ -112,7 +112,7 @@ function validateTelefono(telefono) {
 function isFutureDate(dateStr) {
     if (!dateStr) return false;
     const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return false;
+    if (Number.isNaN(date.getTime())) return false;
     return date.getTime() > Date.now();
 }
 
@@ -128,4 +128,17 @@ function localToISO(localDateTime) {
     // datetime-local ya entregan 'YYYY-MM-DDTHH:mm'; se asegura el formato de
     // segundos sin convertir a UTC (que restaba/sumaba la diferencia horaria).
     return localDateTime.length === 16 ? `${localDateTime}:00` : localDateTime;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        formatDate,
+        formatDateTime,
+        escapeHTML,
+        showAlert,
+        validateEmail,
+        validateTelefono,
+        isFutureDate,
+        localToISO
+    };
 }
