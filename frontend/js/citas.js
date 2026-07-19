@@ -33,15 +33,11 @@ const CitasModule = {
     },
 
     async cargarDoctores() {
-        try {
-            this.doctoresCache = await DoctoresAPI.listar();
-        } catch { /* silencioso */ }
+        this.doctoresCache = await cargarListaSilenciosa(() => DoctoresAPI.listar());
     },
 
     async cargarPacientes() {
-        try {
-            this.pacientesCache = await PacientesAPI.listar();
-        } catch { /* silencioso */ }
+        this.pacientesCache = await cargarListaSilenciosa(() => PacientesAPI.listar());
     },
 
     renderTabla(citas) {

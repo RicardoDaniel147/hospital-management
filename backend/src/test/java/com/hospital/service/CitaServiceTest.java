@@ -209,7 +209,7 @@ class CitaServiceTest {
         @DisplayName("listarPorRangoFechas retorna citas dentro del rango")
         void listarPorRangoFechas_rangoValido_retornaCitas() {
             LocalDateTime inicio = LocalDateTime.of(2026, Month.AUGUST, 1, 0, 0);
-            LocalDateTime fin = LocalDateTime.of(2026, Month.SEPTEMBER, 31, 23, 59);
+            LocalDateTime fin = LocalDateTime.of(2026, Month.SEPTEMBER, 30, 23, 59);
             when(citaRepository.findByFechaHoraBetween(inicio, fin)).thenReturn(List.of(cita));
 
             List<Cita> resultado = citaService.listarPorRangoFechas(inicio, fin);

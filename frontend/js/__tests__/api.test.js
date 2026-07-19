@@ -5,9 +5,10 @@
  * Actividad 2 — Pruebas Unitarias Frontend (api.js)
  *
  * Estrategia:
- *  - api.js es un script de navegador sin exports, por lo que se carga con
- *    fs + new Function para no modificar el codigo fuente (el enunciado
- *    prohibe modificarlo salvo en el punto extra de correcciones).
+ *  - api.js expone sus funciones publicas via module.exports (guardado con
+ *    un typeof check que no afecta su uso como script de navegador), lo que
+ *    permite requerirlo normalmente y que Jest/Istanbul instrumenten el
+ *    archivo para el reporte de cobertura.
  *  - global.fetch se reemplaza por un mock de Jest en cada prueba.
  *  - Se prueban: construccion de URLs, metodos HTTP, headers, cuerpo JSON,
  *    entradas invalidas y el comportamiento ante errores HTTP.
@@ -15,22 +16,7 @@
  *    del modulo sin corregirlos.
  */
 
-const fs = require('fs');
-const path = require('path');
-
 const API_BASE = 'http://localhost:8080/api';
-
-/**
- * Carga api.js en un scope aislado y devuelve sus objetos publicos.
- * Las llamadas a fetch dentro del modulo resuelven al global mockeado.
- */
-function loadApiModule() {
-    const code = fs.readFileSync(path.join(__dirname, '..', 'api.js'), 'utf8');
-    const factory = new Function(
-        `${code}; return { apiFetch, PacientesAPI, DoctoresAPI, CitasAPI, HistoriasAPI };`
-    );
-    return factory();
-}
 
 /** Crea una respuesta simulada de fetch */
 function mockResponse(body, { ok = true, status = 200 } = {}) {
@@ -45,7 +31,8 @@ function mockResponse(body, { ok = true, status = 200 } = {}) {
 let api;
 
 beforeEach(() => {
-    api = loadApiModule();
+    jest.resetModules();
+    api = require('../api.js');
     global.fetch = jest.fn();
 });
 
@@ -135,6 +122,25 @@ describe('apiFetch', () => {
     });
 });
 
+// ==================== unwrapPage ====================
+
+describe('unwrapPage', () => {
+    test('devuelve el array tal cual cuando la respuesta no esta paginada', () => {
+        const datos = [{ id: 1 }, { id: 2 }];
+        expect(api.unwrapPage(datos)).toBe(datos);
+    });
+
+    test('extrae "content" de una respuesta paginada de Spring Data', () => {
+        const pagina = { content: [{ id: 1 }], totalElements: 1, totalPages: 1 };
+        expect(api.unwrapPage(pagina)).toEqual([{ id: 1 }]);
+    });
+
+    test('CASO LIMITE: devuelve arreglo vacio si la respuesta es null o no trae content', () => {
+        expect(api.unwrapPage(null)).toEqual([]);
+        expect(api.unwrapPage({})).toEqual([]);
+    });
+});
+
 // ==================== PacientesAPI ====================
 
 describe('PacientesAPI', () => {
@@ -144,6 +150,14 @@ describe('PacientesAPI', () => {
         await api.PacientesAPI.listar();
 
         expect(global.fetch.mock.calls[0][0]).toBe(`${API_BASE}/pacientes`);
+    });
+
+    test('listar desempaqueta una respuesta paginada del backend', async () => {
+        global.fetch.mockResolvedValue(mockResponse({ content: [{ id: 1, nombre: 'Ana' }], totalElements: 1 }));
+
+        const data = await api.PacientesAPI.listar();
+
+        expect(data).toEqual([{ id: 1, nombre: 'Ana' }]);
     });
 
     test('buscar hace GET a /pacientes/{id}', async () => {
@@ -241,6 +255,15 @@ describe('DoctoresAPI', () => {
         expect(global.fetch.mock.calls[0][0]).toBe(`${API_BASE}/doctores`);
     });
 
+    test('buscar hace GET a /doctores/{id}', async () => {
+        global.fetch.mockResolvedValue(mockResponse({ id: 7 }));
+
+        const data = await api.DoctoresAPI.buscar(7);
+
+        expect(global.fetch.mock.calls[0][0]).toBe(`${API_BASE}/doctores/7`);
+        expect(data).toEqual({ id: 7 });
+    });
+
     test('crear hace POST con el doctor en el body', async () => {
         const doctor = { nombre: 'Luis', apellido: 'Vega', especialidad: 'Neurologia' };
         global.fetch.mockResolvedValue(mockResponse({ id: 5, ...doctor }));
@@ -308,6 +331,15 @@ describe('CitasAPI', () => {
         expect(global.fetch.mock.calls[0][0]).toBe(`${API_BASE}/citas`);
     });
 
+    test('buscar hace GET a /citas/{id}', async () => {
+        global.fetch.mockResolvedValue(mockResponse({ id: 9 }));
+
+        const data = await api.CitasAPI.buscar(9);
+
+        expect(global.fetch.mock.calls[0][0]).toBe(`${API_BASE}/citas/9`);
+        expect(data).toEqual({ id: 9 });
+    });
+
     test('crear hace POST con la cita en el body', async () => {
         const cita = { pacienteId: 1, doctorId: 2, fechaHora: '2026-08-20T09:00:00' };
         global.fetch.mockResolvedValue(mockResponse({ id: 9, ...cita }));
@@ -318,6 +350,18 @@ describe('CitasAPI', () => {
         expect(url).toBe(`${API_BASE}/citas`);
         expect(config.method).toBe('POST');
         expect(JSON.parse(config.body)).toEqual(cita);
+    });
+
+    test('actualizar y eliminar usan PUT y DELETE con el id en la URL', async () => {
+        global.fetch.mockResolvedValue(mockResponse({}));
+
+        await api.CitasAPI.actualizar(9, { estado: 'ATENDIDA' });
+        await api.CitasAPI.eliminar(9);
+
+        expect(global.fetch.mock.calls[0][0]).toBe(`${API_BASE}/citas/9`);
+        expect(global.fetch.mock.calls[0][1].method).toBe('PUT');
+        expect(global.fetch.mock.calls[1][0]).toBe(`${API_BASE}/citas/9`);
+        expect(global.fetch.mock.calls[1][1].method).toBe('DELETE');
     });
 
     test('porPaciente, porDoctor y porEstado construyen las rutas de filtro', async () => {
