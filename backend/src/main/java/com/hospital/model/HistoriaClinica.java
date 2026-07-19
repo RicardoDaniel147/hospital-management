@@ -2,6 +2,7 @@ package com.hospital.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "historias_clinicas")

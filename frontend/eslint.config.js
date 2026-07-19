@@ -38,6 +38,13 @@ module.exports = [
                 validateTelefono: 'readonly',
                 isFutureDate: 'readonly',
                 localToISO: 'readonly',
+                cargarListaSilenciosa: 'readonly',
+                // utils.js y api.js exponen sus funciones via module.exports
+                // (guardado con un typeof check) para que Jest pueda
+                // requerirlas; module no existe en el navegador, pero debe
+                // declararse aqui para que ESLint no lo marque como no
+                // definido en ese bloque condicional.
+                module: 'readonly',
             },
         },
         rules: {
@@ -51,7 +58,7 @@ module.exports = [
             // navegador: no es una redeclaracion ni una variable sin uso
             'no-redeclare': ['error', { builtinGlobals: false }],
             'no-unused-vars': ['error', {
-                varsIgnorePattern: '^(apiFetch|PacientesAPI|DoctoresAPI|CitasAPI|HistoriasAPI|PacientesModule|DoctoresModule|CitasModule|HistoriasModule|App|formatDate|formatDateTime|escapeHTML|showAlert|validateEmail|validateTelefono|isFutureDate|localToISO|API_BASE)$',
+                varsIgnorePattern: '^(apiFetch|PacientesAPI|DoctoresAPI|CitasAPI|HistoriasAPI|PacientesModule|DoctoresModule|CitasModule|HistoriasModule|App|formatDate|formatDateTime|escapeHTML|showAlert|validateEmail|validateTelefono|isFutureDate|localToISO|cargarListaSilenciosa|API_BASE)$',
                 caughtErrors: 'all',
             }],
         },

@@ -130,6 +130,22 @@ function localToISO(localDateTime) {
     return localDateTime.length === 16 ? `${localDateTime}:00` : localDateTime;
 }
 
+/**
+ * Ejecuta una funcion que retorna una promesa (tipicamente un listado
+ * auxiliar como doctores o pacientes para llenar un select) y, si falla,
+ * devuelve un arreglo vacio en lugar de propagar el error. Evita que una
+ * cache secundaria bloquee la carga principal de un modulo.
+ * @param {() => Promise<Array>} fetchFn
+ * @returns {Promise<Array>}
+ */
+async function cargarListaSilenciosa(fetchFn) {
+    try {
+        return await fetchFn();
+    } catch {
+        return [];
+    }
+}
+
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         formatDate,
@@ -139,6 +155,7 @@ if (typeof module !== 'undefined' && module.exports) {
         validateEmail,
         validateTelefono,
         isFutureDate,
-        localToISO
+        localToISO,
+        cargarListaSilenciosa
     };
 }
